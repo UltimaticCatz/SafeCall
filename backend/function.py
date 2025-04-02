@@ -8,6 +8,6 @@ def process_audio(audio_bytes: bytes) -> str:
         audio_file = BytesIO(audio_bytes)
         with sr.AudioFile(audio_file) as source:
             audio_data = recognizer.record(source)
-            return recognizer.recognize_google(audio_data)
+            return recognizer.recognize_google(audio_data, language="th-TH")
     except Exception as e:
         return str(e)
