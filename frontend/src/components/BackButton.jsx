@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 
-function BackButton() {
+function BackButton(props) {
     const navigate = useNavigate();
 
     const handleGoBack = () => {
@@ -12,7 +12,7 @@ function BackButton() {
             onClick={handleGoBack} 
             className="bg-blue-500 text-white px-4 py-2 rounded"
         >
-            Go Back
+            Go Back {props.text && props.text}
         </button>
     );
 }

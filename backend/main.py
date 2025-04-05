@@ -41,10 +41,10 @@ async def generate_code():
     while code in code_list:
         code = generate_random_code()
     async with httpx.AsyncClient() as client:
-        response = await client.post("http://localhost:5173/receive-code", json = {'code': code})
+        response = await client.post("http://localhost:8000/receive-code", json = {'code': code})
         return {
             'generated_code' : code,
-            'api_response': response.json()
+            #'api_response': response.json()
         }
 
 # this is a path way of generate-code; mainly run on generate-code 
@@ -67,4 +67,4 @@ def delete_code(code: str):
 
 '''-------------------------------------------------'''
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=5173)
+    uvicorn.run(app, host="0.0.0.0", port=8000  )

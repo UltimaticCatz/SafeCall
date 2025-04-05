@@ -7,9 +7,13 @@ function Home() {
     const navigate = useNavigate();
 
     const redirectToCreateCall = () => {
-      navigate("/CreateCall");
+      navigate("/createCall");
     }
-  
+    
+    const redirectToJoinCall = () => {
+      navigate("/joinCall");
+    }
+
     return (
       <>
         <div className='flex flex-col gap-10'>
@@ -23,7 +27,7 @@ function Home() {
   
           <div className="flex flex-col gap-10">
             <button className="bg-green-600 fill-green-600" onClick={redirectToCreateCall}>Create Call</button>
-            <button className="bg-blue-600">Join Call</button>
+            <button className="bg-blue-600" onClick={redirectToJoinCall}>Join Call</button>
           </div>
         </div>
         
