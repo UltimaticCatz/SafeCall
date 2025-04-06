@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 from function import *
+import random
+import string
 import httpx
 
 app = FastAPI()
@@ -23,13 +25,15 @@ async def upload_file(file: UploadFile = File(...)):
     audio_bytes = await file.read()
     transcription = process_audio(audio_bytes)
     print(transcription)
-    summary = summarize_text(transcription)
-    return {"transcription": transcription,
-            "summary": summary}
+    return {"transcription": transcription}
 
 '''--------------Code-------------------------------'''
 class CodePayload(BaseModel):
     code :str
+
+def generate_random_code(length = 8):
+    characters = string.ascii_letters + string.digits
+    return ''.join(random.choices(characters, k = length))
 
 @app.get("/generate-code")
 async def generate_code():
@@ -60,7 +64,7 @@ def delete_code(code: str):
         return {"message": f"Code {code} removed", 'remained': code_list}
     else:
         raise HTTPException(status_code=404, detail='Code not found')
-    
+
 '''-------------------------------------------------'''
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000  )

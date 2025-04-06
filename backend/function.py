@@ -1,7 +1,5 @@
 import speech_recognition as sr
 from io import BytesIO
-import random
-import string
 
 def process_audio(audio_bytes: bytes) -> str:
     """Convert audio bytes to text using speech recognition."""
@@ -13,10 +11,3 @@ def process_audio(audio_bytes: bytes) -> str:
             return recognizer.recognize_google(audio_data, language="th-TH")
     except Exception as e:
         return str(e)
-
-def summarize_text(text: str) -> str:
-    return text
-
-def generate_random_code(length = 8):
-    characters = string.ascii_letters + string.digits
-    return ''.join(random.choices(characters, k = length))
