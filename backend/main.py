@@ -24,8 +24,10 @@ async def upload_file(file: UploadFile = File(...)):
     transcription = process_audio(audio_bytes)
     print(transcription)
     summary = summarize_text(transcription)
-    return {"transcription": transcription,
-            "summary": summary}
+    return {
+                "transcription": transcription,
+                "summary": summary
+            }
 
 '''--------------Code-------------------------------'''
 class CodePayload(BaseModel):
