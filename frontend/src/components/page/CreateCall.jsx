@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 import BackButton from '../BackButton';
 import axios from 'axios';
+import TestRTC from './TestRTC';
 
 function CreateCall() {
     const navigate = useNavigate();
@@ -54,6 +55,7 @@ function CreateCall() {
 
             <h1>Room Code: {roomCode}</h1>
             <h2>Waiting for user...</h2>
+            <TestRTC roomCode={roomCode}/>
         </div>
         
       </>

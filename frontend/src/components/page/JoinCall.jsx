@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 import BackButton from '../BackButton';
 import axios from 'axios';
+import TestRTC from './TestRTC';
+
 
 function JoinCall() {
     const navigate = useNavigate();
     const [roomCode, setRoomCode] = useState("");
     const [allRoomCodes, setAllRoomCodes] = useState([]);
+    const [isRoomFound ,setIsRoomFound] = useState(false);
 
     const fetchAllRoomCodes = async () => {
         try {
@@ -32,8 +35,7 @@ function JoinCall() {
         if (allRoomCodes.includes(roomCode)) {
             alert("room found, joining ");
             console.log(`joining room ${roomCode}.`)
-            //rtc connection stuff here
-            //
+            setIsRoomFound(true);
         }
         else {
             alert("Room not found! Enter a new code");
@@ -57,6 +59,9 @@ function JoinCall() {
                 <input placeholder='Room Code' value={roomCode} onChange={handleInputChange} className='border rounded-2xl text-center'></input>
                 <button type="submit" disabled={!isInputValid()}>Join</button>
             </form>
+            {isRoomFound && 
+                <TestRTC roomCode={roomCode} />
+            }
             
             
         </div>

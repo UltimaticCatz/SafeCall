@@ -7,6 +7,14 @@ import random
 import string
 import httpx
 
+from typing import Dict, List
+from fastapi import WebSocket
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from ConnectionManager import ConnectionManager  # if you put it in its own file
+import time
+import wave
+
 app = FastAPI()
 code_list = []
 
@@ -64,6 +72,49 @@ def delete_code(code: str):
         return {"message": f"Code {code} removed", 'remained': code_list}
     else:
         raise HTTPException(status_code=404, detail='Code not found')
+    
+
+'''-----------------Websocket------------------------'''
+manager = ConnectionManager()
+
+# Dictionary to store a file handle for each client
+client_files: Dict[int, wave.Wave_write] = {}
+
+@app.websocket("/ws/{room_code}")
+async def websocket_endpoint(websocket: WebSocket, room_code: str):
+    await manager.connect(room_code, websocket)
+    
+    # Open a WAV file for this client connection.
+    # We use the id of the websocket as a unique identifier.
+    filename = f"audio/audio_{room_code}_{id(websocket)}_{int(time.time())}.wav"
+    wf = wave.open(filename, "wb")
+    wf.setnchannels(1)      # Mono audio (adjust if necessary)
+    wf.setsampwidth(2)      # 2 bytes per sample (16-bit PCM)
+    wf.setframerate(44100)  # Sample rate (adjust to match client settings)
+    client_files[id(websocket)] = wf
+    
+    print(f"[WS] Started recording for client {id(websocket)} to {filename}")
+
+    try:
+        while True:
+            data = await websocket.receive_bytes()
+            print(f"[WS] Received audio chunk from client {id(websocket)} of size {len(data)} bytes")
+            
+            # Write the received audio data into this client's WAV file
+            wf.writeframes(data)
+            
+            # Broadcast the data to other clients in the same room if needed
+            await manager.broadcast(room_code, data, sender=websocket)
+    except WebSocketDisconnect:
+        manager.disconnect(room_code, websocket)
+        print(f"[WS] Client {id(websocket)} disconnected")
+    finally:
+        # Close the client's WAV file and remove it from our dictionary
+        wf.close()
+        client_files.pop(id(websocket), None)
+        print(f"[WS] Closed WAV file for client {id(websocket)}")
+
+
 
 '''-------------------------------------------------'''
 if __name__ == "__main__":
