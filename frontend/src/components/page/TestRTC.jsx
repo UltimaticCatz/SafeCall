@@ -1,6 +1,45 @@
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 
+
+//helper function
+function encodeWAV(samples, sampleRate = 44100) {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+
+  function writeString(view, offset, string) {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  }
+
+  const length = samples.length * 2;
+
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + length, true);
+  writeString(view, 8, 'WAVE');
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true); // PCM format
+  view.setUint16(20, 1, true);  // Audio format
+  view.setUint16(22, 1, true);  // Mono
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true); // byte rate
+  view.setUint16(32, 2, true);  // block align
+  view.setUint16(34, 16, true); // bits per sample
+  writeString(view, 36, 'data');
+  view.setUint32(40, length, true);
+
+  // write PCM samples
+  const index = 44;
+  let offset = 0;
+  for (let i = 0; i < samples.length; i++, offset += 2) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(index + offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+
+  return new Blob([view], { type: 'audio/wav' });
+}
+
 function VoiceChat({ roomCode }) {
   const wsRef = useRef(null);
   const processorRef = useRef(null);
@@ -114,12 +153,7 @@ function VoiceChat({ roomCode }) {
 
       // Set up MediaRecorder to record 10-second chunks for processing.
       // Ensure the stream is available.
-      let options = { mimeType: "audio/wav" };
-      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-        console.warn("WAV not supported, falling back to default format");
-        options = {}; // use default MIME type
-      }
-      const mediaRecorder = new MediaRecorder(stream, options);
+      const mediaRecorder = new MediaRecorder(stream);
       mediaRecorder.ondataavailable = async (event) => {
         if (event.data && event.data.size > 0) {
           console.log("10-second chunk ready, sending to backend");
@@ -133,7 +167,7 @@ function VoiceChat({ roomCode }) {
             setTranscription(response.data.transcription);
           } catch (error) {
             console.error("Error processing audio chunk:", error);
-          }
+          }  
         }
       };
       mediaRecorderRef.current = mediaRecorder;

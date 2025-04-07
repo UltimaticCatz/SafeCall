@@ -19,6 +19,7 @@ function App() {
           <Route path="/createCall" element={<CreateCall />} />
           <Route path="/joinCall" element={<JoinCall />} />
           <Route path="testRTC" element={<TestRTC />} />
+          <Route path="testSystem" element={<TestSystem />} />
         </Routes>
       </BrowserRouter>
     </RoomProvider>

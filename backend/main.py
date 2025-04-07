@@ -14,6 +14,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from ConnectionManager import ConnectionManager  # if you put it in its own file
 import time
 import wave
+import datetime
+from pathlib import Path
+from pydub import AudioSegment
+from tempfile import NamedTemporaryFile
+import shutil
+from io import BytesIO
+
 
 app = FastAPI()
 code_list = []
@@ -22,19 +29,37 @@ code_list = []
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],  # Allow frontend
-    allow_credentials=True,
+    allow_credentials=True, 
     allow_methods=["*"],  # Allow all HTTP methods
     allow_headers=["*"],  # Allow all headers
 )
 '''---------------- File ---------------------------'''
-@app.post("/backend2frontend")
-async def upload_file(file: UploadFile = File(...)):
-    """Handle file upload and return transcribed text."""
-    audio_bytes = await file.read()
-    transcription = process_audio(audio_bytes)
-    print(transcription)
-    return {"transcription": transcription}
+# @app.post("/backend2frontend")
+# async def upload_file(file: UploadFile = File(...)):
+#     """Handle file upload and return transcribed text."""
+#     audio_bytes = await file.read()
+#     wav_bytes = raw_pcm_to_wav_bytes(audio_bytes)  #converts to wav
+#     transcription = process_audio(wav_bytes)
+#     print(transcription)
+#     return {"transcription": transcription}
 
+@app.post("/backend2frontend")
+async def backend2frontend(file: UploadFile = File(...)):
+    # Read uploaded file (webm blob) into memory
+    input_bytes = await file.read()
+    input_buffer = BytesIO(input_bytes)
+
+    # Convert to WAV using pydub in memory
+    audio = AudioSegment.from_file(input_buffer)  # Automatically detects format (webm)
+    wav_io = BytesIO()
+    audio.export(wav_io, format="wav")
+    wav_io.seek(0)  # Important: rewind to start before reading
+
+    # Pass WAV bytes directly to your processing function
+    transcription = process_audio(wav_io.read())
+
+
+    return {"transcription": transcription}
 '''--------------Code-------------------------------'''
 class CodePayload(BaseModel):
     code :str
@@ -82,7 +107,7 @@ client_files: Dict[int, wave.Wave_write] = {}
 
 @app.websocket("/ws/{room_code}")
 async def websocket_endpoint(websocket: WebSocket, room_code: str):
-    await manager.connect(room_code, websocket)
+    user_id = await manager.connect(room_code, websocket)
     
     # Open a WAV file for this client connection.
     # We use the id of the websocket as a unique identifier.
@@ -104,9 +129,9 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str):
             wf.writeframes(data)
             
             # Broadcast the data to other clients in the same room if needed
-            await manager.broadcast(room_code, data, sender=websocket)
+            await manager.broadcast(room_code, data, sender_id=user_id)
     except WebSocketDisconnect:
-        manager.disconnect(room_code, websocket)
+        manager.disconnect(room_code, user_id)
         print(f"[WS] Client {id(websocket)} disconnected")
     finally:
         # Close the client's WAV file and remove it from our dictionary
