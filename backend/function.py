@@ -2,6 +2,7 @@ import speech_recognition as sr
 from io import BytesIO
 import random
 import string
+from LinguisticAnalyzer import LinguisticAnalyzer
 
 def process_audio(audio_bytes: bytes) -> str:
     """Convert audio bytes to text using speech recognition."""
@@ -15,7 +16,12 @@ def process_audio(audio_bytes: bytes) -> str:
         return str(e)
 
 def summarize_text(text: str) -> str:
-    return text
+    analyzer = LinguisticAnalyzer(paragraph=text)
+    results = analyzer.apply_rules()
+    
+    print("Test results:")
+    print(results)
+    return results
 
 def generate_random_code(length = 8):
     characters = string.ascii_letters + string.digits
