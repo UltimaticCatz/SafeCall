@@ -3,8 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 from function import *
-import random
-import string
 import httpx
 
 from typing import Dict, List
@@ -59,14 +57,14 @@ async def backend2frontend(file: UploadFile = File(...)):
     transcription = process_audio(wav_io.read())
 
 
-    return {"transcription": transcription}
+    summary = summarize_text(transcription)
+    return {
+                "transcription": transcription,
+                "summary": summary
+            }
 '''--------------Code-------------------------------'''
 class CodePayload(BaseModel):
     code :str
-
-def generate_random_code(length = 8):
-    characters = string.ascii_letters + string.digits
-    return ''.join(random.choices(characters, k = length))
 
 @app.get("/generate-code")
 async def generate_code():
@@ -75,8 +73,10 @@ async def generate_code():
         code = generate_random_code()
     async with httpx.AsyncClient() as client:
         response = await client.post("http://localhost:8000/receive-code", json = {'code': code})
+        response = await client.post("http://localhost:8000/receive-code", json = {'code': code})
         return {
             'generated_code' : code,
+            #'api_response': response.json()
             #'api_response': response.json()
         }
 
@@ -143,4 +143,5 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str):
 
 '''-------------------------------------------------'''
 if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000  )
     uvicorn.run(app, host="0.0.0.0", port=8000  )
