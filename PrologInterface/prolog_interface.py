@@ -1,5 +1,10 @@
 import subprocess
 import os
+import sys
+
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, project_root)
+print(project_root)
 
 class PrologInterface:
     def __init__(self, prolog_file=None):
@@ -38,8 +43,7 @@ class PrologInterface:
         
         # Check if the Prolog file exists
         if not os.path.exists(file_to_use):
-            raise FileNotFoundError(f"Prolog file not found: {file_to_use}")
-        
+            raise FileNotFoundError(f"Prolog file not found: {file_to_use}")        
         # Prepare the Prolog command
         command = ["swipl", "-s", file_to_use, "-g", query_str, "-t", "halt"]
         

@@ -2,6 +2,10 @@ import speech_recognition as sr
 from io import BytesIO
 import random
 import string
+import os, sys
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+print(project_root)
+sys.path.insert(0, project_root)
 from LinguisticAnalyzer import LinguisticAnalyzer
 
 def process_audio(audio_bytes: bytes) -> str:
@@ -11,7 +15,7 @@ def process_audio(audio_bytes: bytes) -> str:
         audio_file = BytesIO(audio_bytes)
         with sr.AudioFile(audio_file) as source:
             audio_data = recognizer.record(source)
-            return recognizer.recognize_google(audio_data, language="th-TH")
+            return recognizer.recognize_google(audio_data, language="th")
     except Exception as e:
         return str(e)
 
@@ -26,3 +30,6 @@ def summarize_text(text: str) -> str:
 def generate_random_code(length = 8):
     characters = string.ascii_letters + string.digits
     return ''.join(random.choices(characters, k = length))
+
+if __name__ == "__main__":
+    summarize_text("โทรมาจากธนาคารกรุงไทย กรุณาให้ข้อมูลบัญชีของคุณทันที")
