@@ -8,7 +8,7 @@ from PrologInterface import PrologInterface
 
 
 class LinguisticAnalyzer:
-    def __init__(self, paragraph=None, prolog_file="LinguisticAnalyzer\\rules.pl"):
+    def __init__(self, paragraph=None, prolog_file="../LinguisticAnalyzer/rules.pl"):
         self.paragraph = paragraph
         self.thai_text_processor = ThaiTextProcessor()
         self.sentences = []  

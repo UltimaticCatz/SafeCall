@@ -4,6 +4,7 @@ import axios from "axios"
 function TestSystem() {
   const [file, setFile] = useState(null);
   const [transcription, setTranscription] = useState("");
+  const [summary, setSummary] = useState("");
   const handleFileChange = (event) => {
     setFile(event.target.files[0]);
   }
@@ -18,12 +19,15 @@ function TestSystem() {
     formData.append("file", file);
 
     try {
-      const response = await axios.post("http://localhost:8000/backend2frontend", formData, {
+      const response = await axios.post("http://localhost:8000/backend2frontendFile", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      alert(`file upload to backend, server reponse: ${response.data}`);
+      console.log(`file upload to backend, server reponse: ${response.data}`);
+      console.log(`Transcription: ${transcription}`);
+      console.log(`Summary: ${summary}`);
       setTranscription(response.data.transcription);
+      setSummary(response.data.summary);
 
     }
     catch (error) {
@@ -42,7 +46,9 @@ function TestSystem() {
         {transcription && (
           <div className="mt-4 p-2 border rounded ">
             <h3 className="text-lg font-semibold">Transcription:</h3>
-            <p className="text-gray-700">{transcription}</p>
+            <p className="">{transcription}</p>
+            <h3 className="text-lg font-semibold">Summary:</h3>
+            <p className="">{summary}</p>
           </div>
         )}
     </>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-
+import { v4 as uuidv4 } from 'uuid';
 
 //helper function
 function encodeWAV(samples, sampleRate = 44100) {
@@ -47,9 +47,14 @@ function VoiceChat({ roomCode }) {
   const mediaRecorderRef = useRef(null);
   const audioContextRef = useRef(null);
   const streamRef = useRef(null);
+  const textWsRef = useRef(null);
+
+  
+  const clientIdRef = useRef(uuidv4());  // unique per user session 
   
   const [status, setStatus] = useState("Mic Off");
   const [transcription, setTranscription] = useState("");
+  const [summary, setSummary] = useState("");
 
   // Create AudioContext and single WebSocket on mount (or when roomCode changes)
   useEffect(() => {
@@ -59,6 +64,16 @@ function VoiceChat({ roomCode }) {
 
     wsRef.current = new WebSocket(`ws://localhost:8000/ws/${roomCode}`);
     wsRef.current.binaryType = "arraybuffer";
+
+     // Create WebSocket for text updates
+    textWsRef.current = new WebSocket(`ws://localhost:8000/ws/text/${roomCode}/${clientIdRef.current}`);
+    textWsRef.current.onmessage = (event) => {  
+      const { transcription, summary } = JSON.parse(event.data);
+      console.log("Received transcription from ws:", transcription);
+      console.log("Received summary from ws:", summary);
+      setTranscription(transcription);
+      setSummary(summary);
+    };
 
     wsRef.current.onopen = () => {
       console.log("WebSocket connected");
@@ -82,6 +97,7 @@ function VoiceChat({ roomCode }) {
         context.close();
         console.log("AudioContext closed on unmount");
       }
+      textWsRef.current?.close();
     };
   }, [roomCode]);
 
@@ -160,11 +176,13 @@ function VoiceChat({ roomCode }) {
           const formData = new FormData();
           formData.append("file", event.data, "chunk.wav");
           try {
-            const response = await axios.post("http://localhost:8000/backend2frontend", formData, {
+            const response = await axios.post(`http://localhost:8000/backend2frontend/${clientIdRef.current}/${roomCode}`, formData, {
               headers: { "Content-Type": "multipart/form-data" },
             });
             console.log("Processed audio:", response.data);
-            setTranscription(response.data.transcription);
+            console.log("Processed Summary", response.data.summary);
+            //setTranscription(response.data.transcription);
+            //setSummary(response.data.summary);
           } catch (error) {
             console.error("Error processing audio chunk:", error);
           }  
@@ -226,6 +244,12 @@ function VoiceChat({ roomCode }) {
         <div className="mt-4">
           <h3>Transcription:</h3>
           <p>{transcription}</p>
+        </div>
+      )}
+      {summary && (
+        <div className="mt-4">
+          <h3>Summary:</h3>
+          <p>{summary}</p>
         </div>
       )}
       <p>Even with the mic off, you'll receive audio from others.</p>

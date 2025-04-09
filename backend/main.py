@@ -22,11 +22,12 @@ from io import BytesIO
 
 app = FastAPI()
 code_list = []
+manager = ConnectionManager()
 
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Allow frontend
+    allow_origins=["*"],  # Allow frontend
     allow_credentials=True, 
     allow_methods=["*"],  # Allow all HTTP methods
     allow_headers=["*"],  # Allow all headers
@@ -41,8 +42,23 @@ app.add_middleware(
 #     print(transcription)
 #     return {"transcription": transcription}
 
-@app.post("/backend2frontend")
-async def backend2frontend(file: UploadFile = File(...)):
+@app.post("/backend2frontend/{sender_id}/{room_code}")
+async def backend2frontend(sender_id: str, room_code: str, file: UploadFile = File(...)):
+    input_bytes = await file.read()
+    input_buffer = BytesIO(input_bytes)
+    audio = AudioSegment.from_file(input_buffer)
+    wav_io = BytesIO()
+    audio.export(wav_io, format="wav")
+    wav_io.seek(0)
+
+    transcription = process_audio(wav_io.read())
+    summary = summarize_text(transcription)
+
+    await manager.broadcast_text_to_others(room_code, transcription, summary, sender_id=sender_id)
+    return {"message": "Sent to others", "transcription": transcription, "summary": summary}
+
+@app.post("/backend2frontendFile")
+async def backend2frontendFile(file: UploadFile = File(...)):
     # Read uploaded file (webm blob) into memory
     input_bytes = await file.read()
     input_buffer = BytesIO(input_bytes)
@@ -100,7 +116,6 @@ def delete_code(code: str):
     
 
 '''-----------------Websocket------------------------'''
-manager = ConnectionManager()
 
 # Dictionary to store a file handle for each client
 client_files: Dict[int, wave.Wave_write] = {}
@@ -139,6 +154,16 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str):
         client_files.pop(id(websocket), None)
         print(f"[WS] Closed WAV file for client {id(websocket)}")
 
+
+# Store transcription websocket connections separately
+@app.websocket("/ws/text/{room_code}/{client_id}")
+async def websocket_text(room_code: str, client_id: str, websocket: WebSocket):
+    await manager.connect_text(room_code, websocket, client_id)
+    try:
+        while True:
+            await websocket.receive_text()  # No-op to keep alive
+    except WebSocketDisconnect:
+        manager.disconnect_text(room_code, client_id)
 
 
 '''-------------------------------------------------'''
